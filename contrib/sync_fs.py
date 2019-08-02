@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 '''
-clone_fs.py - this file is part of S3QL.
+sync_fs.py - this file is part of S3QL.
 
-Clone an S3QL file system from one backend into another, without
+Synchronize an S3QL file system from one backend into another, without
 recompressing or reencrypting.
 
 Copyright © 2008 Nikolaus Rath <Nikolaus@rath.org>
@@ -36,7 +36,7 @@ def parse_args(args):
     '''Parse command line'''
 
     parser = ArgumentParser(
-                description='Clone an S3QL file system.')
+                description='Synchronize an S3QL file system.')
 
     parser.add_quiet()
     parser.add_log()
@@ -99,6 +99,15 @@ def copy_loop(queue, src_backend_factory, dst_backend_factory, on_return):
         if key is None:
             break
 
+        src_metadata = src_backend.lookup(key)
+        try:
+          dst_metadata = dst_backend.lookup(key)
+          if cmp(src_metadata, dst_metadata) == 0:
+            log.info('found %s on destination, skipping...', key)
+            continue
+        except NoSuchObject:
+          pass
+
         log.debug('reading object %s', key)
         def do_read(fh):
             tmpfh.seek(0)
@@ -154,7 +163,7 @@ def main(args=None):
             stamp2 = time.time()
             if stamp2 - stamp1 > 1:
                 stamp1 = stamp2
-                sys.stdout.write('\rCopied %d objects so far...' % i)
+                sys.stdout.write('\rSynchronized %d objects so far...' % i)
                 sys.stdout.flush()
 
                 # Terminate early if any thread failed with an exception
