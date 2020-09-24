@@ -776,7 +776,12 @@ class B2Backend(AbstractBackend, metaclass=ABCDocstMeta):
             parts.append(part)
 
         buffer = urllib.parse.unquote(''.join(parts))
-        meta = literal_eval('{ %s }' % buffer)
+        try:
+            meta = literal_eval('{ %s }' % buffer)
+        except SyntaxError:
+            buffer_oldformat = urllib.parse.unquote(','.join(parts))
+            meta = literal_eval('{ %s }' % buffer_oldformat)
+            log.debug('Old B2 metadata found: %s' % obj_key)
 
         # Decode bytes values
         for (k, v) in meta.items():
